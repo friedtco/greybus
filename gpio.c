@@ -214,21 +214,6 @@ static void gb_gpio_set_value_operation(struct gb_gpio_controller *ggc,
 	ggc->lines[which].value = request.value;
 }
 
-static int gb_gpio_set_debounce_operation(struct gb_gpio_controller *ggc,
-					u8 which, u16 debounce_usec)
-{
-	struct gb_gpio_set_debounce_request request;
-	int ret;
-
-	request.which = which;
-	request.usec = cpu_to_le16(debounce_usec);
-	ret = gb_operation_sync(ggc->connection, GB_GPIO_TYPE_SET_DEBOUNCE,
-				&request, sizeof(request), NULL, 0);
-	if (!ret)
-		ggc->lines[which].debounce_usec = debounce_usec;
-	return ret;
-}
-
 static void _gb_gpio_irq_mask(struct gb_gpio_controller *ggc, u8 hwirq)
 {
 	struct device *dev = &ggc->gbphy_dev->dev;
@@ -478,19 +463,6 @@ static void gb_gpio_set(struct gpio_chip *chip, unsigned offset, int value)
 	gb_gpio_set_value_operation(ggc, (u8)offset, !!value);
 }
 
-static int gb_gpio_set_debounce(struct gpio_chip *chip, unsigned offset,
-					unsigned debounce)
-{
-	struct gb_gpio_controller *ggc = gpio_chip_to_gb_gpio_controller(chip);
-	u16 usec;
-
-	if (debounce > U16_MAX)
-		return -EINVAL;
-	usec = (u16)debounce;
-
-	return gb_gpio_set_debounce_operation(ggc, (u8)offset, usec);
-}
-
 static int gb_gpio_controller_setup(struct gb_gpio_controller *ggc)
 {
 	int ret;
@@ -698,7 +670,6 @@ static int gb_gpio_probe(struct gbphy_device *gbphy_dev,
 	gpio->direction_output = gb_gpio_direction_output;
 	gpio->get = gb_gpio_get;
 	gpio->set = gb_gpio_set;
-	gpio->set_debounce = gb_gpio_set_debounce;
 	gpio->to_irq = gb_gpio_to_irq;
 	gpio->base = -1;		/* Allocate base dynamically */
 	gpio->ngpio = ggc->line_max + 1;

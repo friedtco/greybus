@@ -120,7 +120,7 @@ enum gb_timesync_state {
 	GB_TIMESYNC_STATE_ACTIVE		= 6,
 };
 
-static void gb_timesync_ktime_timer_fn(unsigned long data);
+static void gb_timesync_ktime_timer_fn(struct timer_list *t);
 
 static u64 gb_timesync_adjust_count(struct gb_timesync_svc *timesync_svc,
 				    u64 counts)
@@ -1055,10 +1055,9 @@ int gb_timesync_svc_add(struct gb_svc *svc)
 		goto done;
 	}
 
-	init_timer(&timesync_svc->ktime_timer);
+	init_timer_key(&timesync_svc->ktime_timer, NULL, 0, NULL, NULL);
 	timesync_svc->ktime_timer.function = gb_timesync_ktime_timer_fn;
 	timesync_svc->ktime_timer.expires = jiffies + GB_TIMESYNC_KTIME_UPDATE;
-	timesync_svc->ktime_timer.data = (unsigned long)timesync_svc;
 	add_timer(&timesync_svc->ktime_timer);
 done:
 	mutex_unlock(&gb_timesync_svc_list_mutex);
@@ -1225,10 +1224,10 @@ done:
 EXPORT_SYMBOL_GPL(gb_timesync_get_frame_time_by_svc);
 
 /* Incrementally updates the conversion base from FrameTime to ktime */
-static void gb_timesync_ktime_timer_fn(unsigned long data)
+static void gb_timesync_ktime_timer_fn(struct timer_list *t)
 {
 	struct gb_timesync_svc *timesync_svc =
-		(struct gb_timesync_svc *)data;
+		container_of(t, struct gb_timesync_svc, ktime_timer);
 	unsigned long flags;
 	u64 frame_time;
 	struct timespec ts;

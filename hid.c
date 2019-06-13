@@ -366,10 +366,10 @@ static int gb_hid_open(struct hid_device *hid)
 	int ret = 0;
 
 	mutex_lock(&gb_hid_open_mutex);
-	if (!hid->open++) {
+	if (!hid->ll_open_count++) {
 		ret = gb_hid_set_power(ghid, GB_HID_TYPE_PWR_ON);
 		if (ret < 0)
-			hid->open--;
+			hid->ll_open_count--;
 		else
 			set_bit(GB_HID_STARTED, &ghid->flags);
 	}
@@ -388,7 +388,7 @@ static void gb_hid_close(struct hid_device *hid)
 	 * due to a resumption we no longer care about..
 	 */
 	mutex_lock(&gb_hid_open_mutex);
-	if (!--hid->open) {
+	if (!--hid->ll_open_count) {
 		clear_bit(GB_HID_STARTED, &ghid->flags);
 
 		/* Save some power */

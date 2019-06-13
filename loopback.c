@@ -64,6 +64,7 @@ struct gb_loopback_async_operation {
 	struct work_struct work;
 	struct kref kref;
 	bool pending;
+	u16 id;
 	int (*completion)(struct gb_loopback_async_operation *op_async);
 };
 
@@ -575,10 +576,13 @@ static void gb_loopback_async_operation_work(struct work_struct *work)
 	gb_loopback_async_operation_put(op_async);
 }
 
-static void gb_loopback_async_operation_timeout(unsigned long data)
+static void gb_loopback_async_operation_timeout(struct timer_list *t)
 {
 	struct gb_loopback_async_operation *op_async;
-	u16 id = data;
+	u16 id;
+
+	op_async = container_of(t, struct gb_loopback_async_operation, timer);
+	id = op_async->id;
 
 	op_async = gb_loopback_operation_find(id);
 	if (!op_async) {
@@ -603,7 +607,6 @@ static int gb_loopback_async_operation(struct gb_loopback *gb, int type,
 		return -ENOMEM;
 
 	INIT_WORK(&op_async->work, gb_loopback_async_operation_work);
-	init_timer(&op_async->timer);
 	kref_init(&op_async->kref);
 
 	operation = gb_operation_create(gb->connection, type, request_size,
@@ -636,7 +639,6 @@ static int gb_loopback_async_operation(struct gb_loopback *gb, int type,
 
 	op_async->timer.function = gb_loopback_async_operation_timeout;
 	op_async->timer.expires = jiffies + gb->jiffy_timeout;
-	op_async->timer.data = (unsigned long)operation->id;
 	add_timer(&op_async->timer);
 
 	goto done;

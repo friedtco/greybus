@@ -9,9 +9,9 @@ addons:
   apt:
     packages:
       - build-essential
-      - linux-headers
 
 script:
+  - sudo sh -c "apt update && apt install -y linux-headers-`uname -r`"
   - make -j`nproc --all`
 
 notifications:

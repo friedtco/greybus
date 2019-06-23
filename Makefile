@@ -24,6 +24,7 @@ gb-loopback-y := loopback.o
 gb-raw-y := raw.o
 gb-hid-y := hid.o
 gb-es2-y := es2.o
+gb-netlink-y := netlink.o
 gb-arche-y := arche-platform.o arche-apb-ctrl.o
 gb-audio-module-y := audio_module.o audio_topology.o
 gb-audio-codec-y := audio_codec.o
@@ -53,6 +54,7 @@ obj-m += gb-loopback.o
 obj-m += gb-hid.o
 obj-m += gb-raw.o
 obj-m += gb-es2.o
+obj-m += gb-netlink.o
 ifeq ($(CONFIG_USB_HSIC_USB3613),y)
  obj-m += gb-arche.o
 endif

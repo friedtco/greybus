@@ -11,7 +11,7 @@ greybus-y :=	core.o		\
 		svc_watchdog.o	\
 		operation.o	\
 		timesync.o	\
-		timesync_platform.o
+		timesync_jiffies.o
 
 gb-gbphy-y := gbphy.o
 

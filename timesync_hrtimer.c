@@ -7,7 +7,8 @@
  *
  * Released under the GPLv2 only.
  *
- * This code simply uses jiffies to provide a timesync source.
+ * This code simply uses hrtimer and CLOCK_MONOTONIC to provide a timesync
+ * source.
  *
  * Based on timesync_platform.c .
  *
@@ -15,15 +16,12 @@
  */
 #include <asm-generic/errno.h>
 #include <linux/types.h>
-#include <linux/jiffies.h>
-
-#ifndef NULL
-#define NULL (void *)0x0
-#endif
+#include <linux/hrtimer.h>
 
 #include "greybus.h"
 #include "arche_platform.h"
 
+static struct hrtimer timer;
 static u32 gb_timesync_clock_frequency;
 int (*arche_platform_change_state_cb)(enum arche_platform_state state,
 				      struct gb_timesync_svc *pdata);
@@ -31,7 +29,8 @@ EXPORT_SYMBOL_GPL(arche_platform_change_state_cb);
 
 u64 gb_timesync_platform_get_counter(void)
 {
-	return (u64)jiffies;
+	ktime_t t = hrtimer_cb_get_time(&timer);
+	return (u64) t;
 }
 
 u32 gb_timesync_platform_get_clock_rate(void)
@@ -52,13 +51,11 @@ void gb_timesync_platform_unlock_bus(void)
 
 int __init gb_timesync_platform_init(void)
 {
-#if defined( CONFIG_HZ )
-	gb_timesync_clock_frequency = HZ;
+	hrtimer_init( &timer, CLOCK_MONOTONIC, HRTIMER_MODE_ABS );
+
+	gb_timesync_clock_frequency = 1000000000 / hrtimer_resolution;
+
 	return 0;
-#else
-	pr_err( "HZ is not defined" );
-	return -1;
-#endif
 }
 
 void gb_timesync_platform_exit(void) {}

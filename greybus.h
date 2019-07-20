@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Greybus driver and device API
  *
  * Copyright 2014-2015 Google Inc.
  * Copyright 2014-2015 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #ifndef __LINUX_GREYBUS_H
@@ -21,7 +20,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/idr.h>
 
-#include "kernel_ver.h"
 #include "greybus_id.h"
 #include "greybus_manifest.h"
 #include "greybus_protocols.h"
@@ -34,7 +32,6 @@
 #include "bundle.h"
 #include "connection.h"
 #include "operation.h"
-#include "timesync.h"
 
 /* Matches up with the Greybus Protocol specification document */
 #define GREYBUS_VERSION_MAJOR	0x00
@@ -150,6 +147,27 @@ static inline bool cport_id_valid(struct gb_host_device *hd, u16 cport_id)
 {
 	return cport_id != CPORT_ID_BAD && cport_id < hd->num_cports;
 }
+
+#ifndef struct_size
+// just a hack to keep the OOTM happy
+#include "overflow.h"
+#endif
+
+#ifndef DEFINE_SHOW_ATTRIBUTE
+#define DEFINE_SHOW_ATTRIBUTE(__name)                                   \
+static int __name ## _open(struct inode *inode, struct file *file)      \
+{                                                                       \
+        return single_open(file, __name ## _show, inode->i_private);    \
+}                                                                       \
+                                                                        \
+static const struct file_operations __name ## _fops = {                 \
+        .owner          = THIS_MODULE,                                  \
+        .open           = __name ## _open,                              \
+        .read           = seq_read,                                     \
+        .llseek         = seq_lseek,                                    \
+        .release        = single_release,                               \
+}
+#endif
 
 #endif /* __KERNEL__ */
 #endif /* __LINUX_GREYBUS_H */

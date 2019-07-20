@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Greybus SPI library
  *
  * Copyright 2014-2016 Google Inc.
  * Copyright 2014-2016 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #include <linux/bitops.h>
@@ -456,10 +455,10 @@ static int gb_spi_setup_device(struct gb_spilib *spi, u8 cs)
 	dev_type = response.device_type;
 
 	if (dev_type == GB_SPI_SPI_DEV)
-		strlcpy(spi_board.modalias, SPI_DEV_MODALIAS,
+		strlcpy(spi_board.modalias, "spidev",
 			sizeof(spi_board.modalias));
 	else if (dev_type == GB_SPI_SPI_NOR)
-		strlcpy(spi_board.modalias, SPI_NOR_MODALIAS,
+		strlcpy(spi_board.modalias, "spi-nor",
 			sizeof(spi_board.modalias));
 	else if (dev_type == GB_SPI_SPI_MODALIAS)
 		memcpy(spi_board.modalias, response.name,
@@ -526,9 +525,7 @@ int gb_spilib_master_init(struct gb_connection *connection, struct device *dev,
 			gb_spi_unprepare_transfer_hardware;
 	}
 
-#ifdef SPI_CORE_SUPPORT_PM
 	master->auto_runtime_pm = true;
-#endif
 
 	ret = spi_register_master(master);
 	if (ret < 0)
@@ -546,10 +543,13 @@ int gb_spilib_master_init(struct gb_connection *connection, struct device *dev,
 
 	return 0;
 
-exit_spi_unregister:
-	spi_unregister_master(master);
 exit_spi_put:
 	spi_master_put(master);
+
+	return ret;
+
+exit_spi_unregister:
+	spi_unregister_master(master);
 
 	return ret;
 }
@@ -560,7 +560,6 @@ void gb_spilib_master_exit(struct gb_connection *connection)
 	struct spi_master *master = gb_connection_get_data(connection);
 
 	spi_unregister_master(master);
-	spi_master_put(master);
 }
 EXPORT_SYMBOL_GPL(gb_spilib_master_exit);
 

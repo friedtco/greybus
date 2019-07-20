@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Greybus Firmware Core Bundle Driver.
  *
  * Copyright 2016 Google Inc.
  * Copyright 2016 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 
@@ -20,26 +19,7 @@ struct gb_fw_core {
 	struct gb_connection	*cap_connection;
 };
 
-#ifndef SPI_CORE_SUPPORT_PM
-static int fw_spi_prepare_transfer_hardware(struct device *dev)
-{
-	return gb_pm_runtime_get_sync(to_gb_bundle(dev));
-}
-
-static void fw_spi_unprepare_transfer_hardware(struct device *dev)
-{
-	gb_pm_runtime_put_autosuspend(to_gb_bundle(dev));
-}
-
-static struct spilib_ops __spilib_ops = {
-	.prepare_transfer_hardware = fw_spi_prepare_transfer_hardware,
-	.unprepare_transfer_hardware = fw_spi_unprepare_transfer_hardware,
-};
-
-static struct spilib_ops *spilib_ops = &__spilib_ops;
-#else
-static struct spilib_ops *spilib_ops = NULL;
-#endif
+static struct spilib_ops *spilib_ops;
 
 struct gb_connection *to_fw_mgmt_connection(struct device *dev)
 {

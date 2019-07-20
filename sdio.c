@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * SD/MMC Greybus driver.
  *
  * Copyright 2014-2015 Google Inc.
  * Copyright 2014-2015 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #include <linux/kernel.h>
@@ -46,9 +45,13 @@ struct gb_sdio_host {
 /* kernel vdd starts at 0x80 and we need to translate to greybus ones 0x01 */
 #define GB_SDIO_VDD_SHIFT	8
 
+#ifndef MMC_CAP2_CORE_RUNTIME_PM
+#define MMC_CAP2_CORE_RUNTIME_PM	0
+#endif
+
 static inline bool single_op(struct mmc_command *cmd)
 {
-	uint32_t opcode = cmd->opcode;
+	u32 opcode = cmd->opcode;
 
 	return opcode == MMC_WRITE_BLOCK ||
 	       opcode == MMC_READ_SINGLE_BLOCK;
@@ -78,10 +81,8 @@ static void _gb_sdio_set_host_caps(struct gb_sdio_host *host, u32 r)
 		((r & GB_SDIO_CAP_DRIVER_TYPE_D) ? MMC_CAP_DRIVER_TYPE_D : 0);
 
 	caps2 = ((r & GB_SDIO_CAP_HS200_1_2V) ? MMC_CAP2_HS200_1_2V_SDR : 0) |
-#ifdef MMC_HS400_SUPPORTED
 		((r & GB_SDIO_CAP_HS400_1_2V) ? MMC_CAP2_HS400_1_2V : 0) |
 		((r & GB_SDIO_CAP_HS400_1_8V) ? MMC_CAP2_HS400_1_8V : 0) |
-#endif
 		((r & GB_SDIO_CAP_HS200_1_8V) ? MMC_CAP2_HS200_1_8V_SDR : 0);
 
 	host->mmc->caps = caps;
@@ -136,7 +137,7 @@ static int gb_sdio_get_caps(struct gb_sdio_host *host)
 	data_max = min(data_max - sizeof(struct gb_sdio_transfer_request),
 		       data_max - sizeof(struct gb_sdio_transfer_response));
 
-	blksz = min(le16_to_cpu(response.max_blk_size), data_max);
+	blksz = min_t(u16, le16_to_cpu(response.max_blk_size), data_max);
 	blksz = max_t(u32, 512, blksz);
 
 	mmc->max_blk_size = rounddown_pow_of_two(blksz);
@@ -189,9 +190,8 @@ static int _gb_sdio_process_events(struct gb_sdio_host *host, u8 event)
 		state_changed = 1;
 	}
 
-	if (event & GB_SDIO_WP) {
+	if (event & GB_SDIO_WP)
 		host->read_only = true;
-	}
 
 	if (state_changed) {
 		dev_info(mmc_dev(host->mmc), "card %s now event\n",
@@ -275,7 +275,7 @@ static int _gb_sdio_send(struct gb_sdio_host *host, struct mmc_data *data,
 		return -ENOMEM;
 
 	request = operation->request->payload;
-	request->data_flags = (data->flags >> 8);
+	request->data_flags = data->flags >> 8;
 	request->data_blocks = cpu_to_le16(nblocks);
 	request->data_blksz = cpu_to_le16(data->blksz);
 
@@ -329,7 +329,7 @@ static int _gb_sdio_recv(struct gb_sdio_host *host, struct mmc_data *data,
 		return -ENOMEM;
 
 	request = operation->request->payload;
-	request->data_flags = (data->flags >> 8);
+	request->data_flags = data->flags >> 8;
 	request->data_blocks = cpu_to_le16(nblocks);
 	request->data_blksz = cpu_to_le16(data->blksz);
 
@@ -476,7 +476,7 @@ static int gb_sdio_command(struct gb_sdio_host *host, struct mmc_command *cmd)
 		goto out;
 
 	/* no response expected */
-	if (cmd_flags & GB_SDIO_RSP_NONE)
+	if (cmd_flags == GB_SDIO_RSP_NONE)
 		goto out;
 
 	/* long response expected */
@@ -602,9 +602,9 @@ static void gb_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 		vdd = 1 << (ios->vdd - GB_SDIO_VDD_SHIFT);
 	request.vdd = cpu_to_le32(vdd);
 
-	request.bus_mode = (ios->bus_mode == MMC_BUSMODE_OPENDRAIN ?
+	request.bus_mode = ios->bus_mode == MMC_BUSMODE_OPENDRAIN ?
 			    GB_SDIO_BUSMODE_OPENDRAIN :
-			    GB_SDIO_BUSMODE_PUSHPULL);
+			    GB_SDIO_BUSMODE_PUSHPULL;
 
 	switch (ios->power_mode) {
 	case MMC_POWER_OFF:
@@ -617,11 +617,9 @@ static void gb_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	case MMC_POWER_ON:
 		power_mode = GB_SDIO_POWER_ON;
 		break;
-#ifdef MMC_POWER_UNDEFINED_SUPPORTED
 	case MMC_POWER_UNDEFINED:
 		power_mode = GB_SDIO_POWER_UNDEFINED;
 		break;
-#endif
 	}
 	request.power_mode = power_mode;
 
@@ -665,19 +663,15 @@ static void gb_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
 	case MMC_TIMING_UHS_DDR50:
 		timing = GB_SDIO_TIMING_UHS_DDR50;
 		break;
-#ifdef MMC_DDR52_DEFINED
 	case MMC_TIMING_MMC_DDR52:
 		timing = GB_SDIO_TIMING_MMC_DDR52;
 		break;
-#endif
 	case MMC_TIMING_MMC_HS200:
 		timing = GB_SDIO_TIMING_MMC_HS200;
 		break;
-#ifdef MMC_HS400_SUPPORTED
 	case MMC_TIMING_MMC_HS400:
 		timing = GB_SDIO_TIMING_MMC_HS400;
 		break;
-#endif
 	}
 	request.timing = timing;
 

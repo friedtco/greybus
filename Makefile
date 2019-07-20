@@ -9,9 +9,7 @@ greybus-y :=	core.o		\
 		control.o	\
 		svc.o		\
 		svc_watchdog.o	\
-		operation.o	\
-		timesync.o	\
-		timesync_hrtimer.o
+		operation.o
 
 gb-gbphy-y := gbphy.o
 

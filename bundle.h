@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Greybus bundles
  *
  * Copyright 2014 Google Inc.
  * Copyright 2014 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #ifndef __BUNDLE_H
@@ -41,7 +40,7 @@ int gb_bundle_add(struct gb_bundle *bundle);
 void gb_bundle_destroy(struct gb_bundle *bundle);
 
 /* Bundle Runtime PM wrappers */
-#ifdef CONFIG_PM_RUNTIME
+#ifdef CONFIG_PM
 static inline int gb_pm_runtime_get_sync(struct gb_bundle *bundle)
 {
 	int retval;

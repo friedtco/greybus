@@ -1,17 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Greybus manifest parsing
  *
  * Copyright 2014-2015 Google Inc.
  * Copyright 2014-2015 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #include "greybus.h"
 
 static const char *get_descriptor_type_string(u8 type)
 {
-	switch(type) {
+	switch (type) {
 	case GREYBUS_TYPE_INVALID:
 		return "invalid";
 	case GREYBUS_TYPE_STRING:

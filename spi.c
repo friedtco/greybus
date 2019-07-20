@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * SPI bridge PHY driver.
  *
  * Copyright 2014-2016 Google Inc.
  * Copyright 2014-2016 Linaro Ltd.
- *
- * Released under the GPLv2 only.
  */
 
 #include <linux/module.h>
@@ -13,26 +12,7 @@
 #include "gbphy.h"
 #include "spilib.h"
 
-#ifndef SPI_CORE_SUPPORT_PM
-static int gbphy_spi_prepare_transfer_hardware(struct device *dev)
-{
-	return gbphy_runtime_get_sync(to_gbphy_dev(dev));
-}
-
-static void gbphy_spi_unprepare_transfer_hardware(struct device *dev)
-{
-	gbphy_runtime_put_autosuspend(to_gbphy_dev(dev));
-}
-
-static struct spilib_ops __spilib_ops = {
-	.prepare_transfer_hardware = gbphy_spi_prepare_transfer_hardware,
-	.unprepare_transfer_hardware = gbphy_spi_unprepare_transfer_hardware,
-};
-
-static struct spilib_ops *spilib_ops = &__spilib_ops;
-#else
-static struct spilib_ops *spilib_ops = NULL;
-#endif
+static struct spilib_ops *spilib_ops;
 
 static int gb_spi_probe(struct gbphy_device *gbphy_dev,
 			const struct gbphy_device_id *id)

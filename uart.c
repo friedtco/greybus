@@ -28,6 +28,7 @@
 #include <linux/kfifo.h>
 #include <linux/workqueue.h>
 #include <linux/completion.h>
+#include <linux/version.h>
 
 #include "greybus.h"
 #include "gbphy.h"
@@ -616,6 +617,8 @@ static void gb_tty_unthrottle(struct tty_struct *tty)
 	}
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
+
 static int get_serial_info(struct tty_struct *tty,
 			   struct serial_struct *ss)
 {
@@ -658,6 +661,8 @@ static int set_serial_info(struct tty_struct *tty,
 	mutex_unlock(&gb_tty->port.mutex);
 	return retval;
 }
+
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0) */
 
 static int wait_serial_change(struct gb_tty *gb_tty, unsigned long arg)
 {
@@ -805,8 +810,10 @@ static const struct tty_operations gb_ops = {
 	.tiocmget =		gb_tty_tiocmget,
 	.tiocmset =		gb_tty_tiocmset,
 	.get_icount =		gb_tty_get_icount,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0)
 	.set_serial =		set_serial_info,
 	.get_serial =		get_serial_info,
+#endif /* LINUX_VERSION_CODE >= KERNEL_VERSION(4,20,0) */
 };
 
 static const struct tty_port_operations gb_port_ops = {

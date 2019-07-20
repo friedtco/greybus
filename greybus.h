@@ -148,5 +148,26 @@ static inline bool cport_id_valid(struct gb_host_device *hd, u16 cport_id)
 	return cport_id != CPORT_ID_BAD && cport_id < hd->num_cports;
 }
 
+#ifndef struct_size
+// just a hack to keep the OOTM happy
+#include "overflow.h"
+#endif
+
+#ifndef DEFINE_SHOW_ATTRIBUTE
+#define DEFINE_SHOW_ATTRIBUTE(__name)                                   \
+static int __name ## _open(struct inode *inode, struct file *file)      \
+{                                                                       \
+        return single_open(file, __name ## _show, inode->i_private);    \
+}                                                                       \
+                                                                        \
+static const struct file_operations __name ## _fops = {                 \
+        .owner          = THIS_MODULE,                                  \
+        .open           = __name ## _open,                              \
+        .read           = seq_read,                                     \
+        .llseek         = seq_lseek,                                    \
+        .release        = single_release,                               \
+}
+#endif
+
 #endif /* __KERNEL__ */
 #endif /* __LINUX_GREYBUS_H */

@@ -123,8 +123,6 @@ static int message_send(struct gb_host_device *hd, u16 cport_id,
 	 */
 	greybus_message_sent(hd, message, retval < 0 ? retval : 0);
 
-	dev_info(&nl_hd->dev, "sent message successfully\n");
-
 	return 0;
 
 out:
@@ -182,8 +180,6 @@ static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info)
 	}
 
 	greybus_data_rcvd(nl_hd, cport_id, data, nla_len(na));
-
-	dev_info(&nl_hd->dev, "received message successfully\n");
 
 	return 0;
 }

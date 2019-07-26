@@ -21,7 +21,6 @@
 struct gb_netlink {
 	struct socket *socket;
 	unsigned int cport_id;
-	int netlink_port_id;
 };
 
 static dev_t first;
@@ -77,8 +76,6 @@ static int message_send(struct gb_host_device *hd, u16 cport_id,
 	struct nl_msg *nl_msg;
 	struct sk_buff *skb;
 	int retval;
-	struct gb_netlink *gb_nl = hd_to_netlink(hd);
-	int netlink_port_id = ( NULL == gb_nl ) ? -1 : gb_nl->netlink_port_id;
 
 	skb = genlmsg_new(sizeof(*message->header) + sizeof(u32) +
 			  message->payload_size, GFP_KERNEL);
@@ -87,7 +84,7 @@ static int message_send(struct gb_host_device *hd, u16 cport_id,
 		goto out;
 	}
 
-	nl_msg = genlmsg_put(skb, netlink_port_id, 0,
+	nl_msg = genlmsg_put(skb, GB_NL_PID, 0,
 			     &gb_nl_family, 0, GB_NL_C_MSG);
 	if (!nl_msg) {
 		dev_err(&nl_hd->dev, "genlmsg_put() failed\n");
@@ -111,7 +108,7 @@ static int message_send(struct gb_host_device *hd, u16 cport_id,
 
 	genlmsg_end(skb, nl_msg);
 
-	retval = genlmsg_unicast(&init_net, skb, netlink_port_id);
+	retval = genlmsg_unicast(&init_net, skb, GB_NL_PID);
 	if (retval) {
 		dev_err(&nl_hd->dev, "genlmsg_unicast() failed\n");
 		goto out;
@@ -139,7 +136,6 @@ static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info)
 	struct nlattr *na;
 	u16 cport_id;
 	void *data;
-	struct gb_netlink *gb_nl;
 
 	if (!info) {
 		dev_err(&nl_hd->dev,
@@ -172,11 +168,6 @@ static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info)
 		dev_err(&nl_hd->dev,
 			"Received message without data\n");
 		return -EINVAL;
-	}
-
-	gb_nl = hd_to_netlink(nl_hd);
-	if ( gb_nl ) {
-		gb_nl->netlink_port_id = info->snd_portid;
 	}
 
 	greybus_data_rcvd(nl_hd, cport_id, data, nla_len(na));
@@ -231,7 +222,6 @@ static int _gb_netlink_init(struct device *dev)
 {
 	int retval;
 	struct gb_host_device *hd;
-	struct gb_netlink *gb;
 
 	hd = gb_hd_create(&tcpip_driver, dev, GB_NETLINK_MTU,
 			  GB_NETLINK_NUM_CPORT);
@@ -241,8 +231,6 @@ static int _gb_netlink_init(struct device *dev)
 	}
 
 	nl_hd = hd;
-	gb = hd_to_netlink(hd);
-	gb->netlink_port_id = -1;
 
 	retval = gb_hd_add(hd);
 	if (retval) {

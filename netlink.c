@@ -35,12 +35,31 @@ static inline struct gb_netlink *hd_to_netlink(struct gb_host_device *hd)
 	return (struct gb_netlink *)&hd->hd_priv;
 }
 
-static struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
+static const struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
 	[GB_NL_A_DATA] = { .type = NLA_BINARY, .len = GB_NETLINK_MTU },
 	[GB_NL_A_CPORT] = { .type = NLA_U16},
 };
 
-static const struct genl_ops gb_nl_ops[];
+static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info);
+static int gb_netlink_hd_reset(struct sk_buff *skb, struct genl_info *info);
+
+static const struct genl_ops gb_nl_ops[] = {
+	{
+		.cmd = GB_NL_C_MSG,
+		.flags = 0,
+		.policy = gb_nl_policy,
+		.doit = gb_netlink_msg,
+		.dumpit = NULL,
+	},
+	{
+		.cmd = GB_NL_C_HD_RESET,
+		.flags = 0,
+		.policy = gb_nl_policy,		/* TODO change to NULL */
+		.doit = gb_netlink_hd_reset,
+		.dumpit = NULL,
+	},
+};
+
 #define VERSION_NR 1
 static struct genl_family gb_nl_family = {
 	.hdrsize = 0,
@@ -48,6 +67,7 @@ static struct genl_family gb_nl_family = {
 	.version = VERSION_NR,
 	.maxattr = GB_NL_A_MAX,
 	.ops = gb_nl_ops,
+	.n_ops = ARRAY_SIZE( gb_nl_ops ),
 };
 
 static int message_send(struct gb_host_device *hd, u16 cport_id,
@@ -170,23 +190,6 @@ static int gb_netlink_hd_reset(struct sk_buff *skb, struct genl_info *info)
 
 	return 0;
 }
-
-static const struct genl_ops gb_nl_ops[] = {
-	{
-		.cmd = GB_NL_C_MSG,
-		.flags = 0,
-		.policy = gb_nl_policy,
-		.doit = gb_netlink_msg,
-		.dumpit = NULL,
-	},
-	{
-		.cmd = GB_NL_C_HD_RESET,
-		.flags = 0,
-		.policy = gb_nl_policy,		/* TODO change to NULL */
-		.doit = gb_netlink_hd_reset,
-		.dumpit = NULL,
-	},
-};
 
 static struct gb_hd_driver tcpip_driver = {
 	.hd_priv_size		= sizeof(struct gb_netlink),

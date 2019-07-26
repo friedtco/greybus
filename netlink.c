@@ -222,6 +222,7 @@ static int _gb_netlink_init(struct device *dev)
 {
 	int retval;
 	struct gb_host_device *hd;
+	struct gb_netlink *gb;
 
 	hd = gb_hd_create(&tcpip_driver, dev, GB_NETLINK_MTU,
 			  GB_NETLINK_NUM_CPORT);
@@ -231,6 +232,7 @@ static int _gb_netlink_init(struct device *dev)
 	}
 
 	nl_hd = hd;
+	gb = hd_to_netlink(hd);
 
 	retval = gb_hd_add(hd);
 	if (retval) {

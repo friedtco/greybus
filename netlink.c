@@ -35,39 +35,18 @@ static inline struct gb_netlink *hd_to_netlink(struct gb_host_device *hd)
 	return (struct gb_netlink *)&hd->hd_priv;
 }
 
-static const struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
+static struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
 	[GB_NL_A_DATA] = { .type = NLA_BINARY, .len = GB_NETLINK_MTU },
 	[GB_NL_A_CPORT] = { .type = NLA_U16},
 };
 
-static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info);
-static int gb_netlink_hd_reset(struct sk_buff *skb, struct genl_info *info);
-
-static const struct genl_ops gb_nl_ops[] = {
-	{
-		.cmd = GB_NL_C_MSG,
-		.flags = 0,
-		.policy = gb_nl_policy,
-		.doit = gb_netlink_msg,
-		.dumpit = NULL,
-	},
-	{
-		.cmd = GB_NL_C_HD_RESET,
-		.flags = 0,
-		.policy = gb_nl_policy,		/* TODO change to NULL */
-		.doit = gb_netlink_hd_reset,
-		.dumpit = NULL,
-	},
-};
-
 #define VERSION_NR 1
 static struct genl_family gb_nl_family = {
+	.id = GENL_ID_GENERATE,
 	.hdrsize = 0,
 	.name = GB_NL_NAME,
 	.version = VERSION_NR,
 	.maxattr = GB_NL_A_MAX,
-	.ops = gb_nl_ops,
-	.n_ops = ARRAY_SIZE( gb_nl_ops ),
 };
 
 static int message_send(struct gb_host_device *hd, u16 cport_id,
@@ -79,40 +58,31 @@ static int message_send(struct gb_host_device *hd, u16 cport_id,
 
 	skb = genlmsg_new(sizeof(*message->header) + sizeof(u32) +
 			  message->payload_size, GFP_KERNEL);
-	if (!skb) {
-		dev_err(&nl_hd->dev, "Failed to allocate message\n");
+	if (!skb)
 		goto out;
-	}
 
 	nl_msg = genlmsg_put(skb, GB_NL_PID, 0,
 			     &gb_nl_family, 0, GB_NL_C_MSG);
 	if (!nl_msg) {
-		dev_err(&nl_hd->dev, "genlmsg_put() failed\n");
 		retval = -ENOMEM;
 		goto out;
 	}
 
 	retval = nla_put_u32(skb, GB_NL_A_CPORT, cport_id);
-	if (retval) {
-		dev_err(&nl_hd->dev, "nla_put_u32() failed\n");
+	if (retval)
 		goto out;
-	}
 
 	retval = nla_put(skb, GB_NL_A_DATA,
 			 sizeof(*message->header) + message->payload_size,
 			 message->header);
-	if (retval) {
-		dev_err(&nl_hd->dev, "nla_put() failed\n");
+	if (retval)
 		goto out;
-	}
 
 	genlmsg_end(skb, nl_msg);
 
 	retval = genlmsg_unicast(&init_net, skb, GB_NL_PID);
-	if (retval) {
-		dev_err(&nl_hd->dev, "genlmsg_unicast() failed\n");
+	if (retval)
 		goto out;
-	}
 
 	/*
 	 * Tell the submitter that the message send (attempt) is
@@ -137,11 +107,8 @@ static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info)
 	u16 cport_id;
 	void *data;
 
-	if (!info) {
-		dev_err(&nl_hd->dev,
-			"Received message without info\n");
+	if (!info)
 		return -EPROTO;
-	}
 
 	na = info->attrs[GB_NL_A_CPORT];
 	if (!na) {
@@ -187,6 +154,23 @@ static int gb_netlink_hd_reset(struct sk_buff *skb, struct genl_info *info)
 	return 0;
 }
 
+struct genl_ops gb_nl_ops[] = {
+	{
+		.cmd = GB_NL_C_MSG,
+		.flags = 0,
+		.policy = gb_nl_policy,
+		.doit = gb_netlink_msg,
+		.dumpit = NULL,
+	},
+	{
+		.cmd = GB_NL_C_HD_RESET,
+		.flags = 0,
+		.policy = gb_nl_policy,		/* TODO change to NULL */
+		.doit = gb_netlink_hd_reset,
+		.dumpit = NULL,
+	},
+};
+
 static struct gb_hd_driver tcpip_driver = {
 	.hd_priv_size		= sizeof(struct gb_netlink),
 	.message_send		= message_send,
@@ -197,10 +181,8 @@ static void _gb_netlink_exit(void)
 {
 	struct gb_host_device *hd = nl_hd;
 
-	if (!hd) {
-		pr_err( "hd is NULL\n");
+	if (!hd)
 		return;
-	}
 
 	gb_hd_del(hd);
 	gb_hd_put(hd);
@@ -226,19 +208,15 @@ static int _gb_netlink_init(struct device *dev)
 
 	hd = gb_hd_create(&tcpip_driver, dev, GB_NETLINK_MTU,
 			  GB_NETLINK_NUM_CPORT);
-	if (IS_ERR(hd)) {
-		pr_err( "gb_hd_create() failed\n" );
+	if (IS_ERR(hd))
 		return PTR_ERR(hd);
-	}
 
 	nl_hd = hd;
 	gb = hd_to_netlink(hd);
 
 	retval = gb_hd_add(hd);
-	if (retval) {
-		dev_err(&nl_hd->dev, "gb_hd_add() failed\n");
+	if (retval)
 		goto err_gb_hd_del;
-	}
 
 	return 0;
 
@@ -254,37 +232,29 @@ static int __init gb_netlink_init(void)
 	int retval;
 	struct device *dev;
 
-	retval = genl_register_family(&gb_nl_family);
-	if (retval) {
-		pr_err( "genl_register_family() failed\n" );
+	retval = genl_register_family_with_ops(&gb_nl_family, gb_nl_ops);
+	if (retval)
 		return retval;
-	}
 
 	retval = alloc_chrdev_region(&first, 0, 1, "gb_nl");
-	if (retval) {
-		pr_err( "alloc_chrdev_region() failed\n");
+	if (retval)
 		goto err_genl_unregister;
-	}
 
 	class = class_create(THIS_MODULE, "gb_nl");
 	if (IS_ERR(class)) {
-		pr_err( "class_create() failed\n");
 		retval = PTR_ERR(class);
 		goto err_chrdev_unregister;
 	}
 
 	dev = device_create(class, NULL, first, NULL, "gn_nl");
 	if (IS_ERR(dev)) {
-		pr_err( "device_create() failed\n");
 		retval = PTR_ERR(dev);
 		goto err_class_destroy;
 	}
 
 	retval = _gb_netlink_init(dev);
-	if (retval) {
-		pr_err( "_gb_netlink_init() failed\n");
+	if (retval)
 		goto err_device_destroy;
-	}
 
 	return 0;
 

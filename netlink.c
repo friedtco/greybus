@@ -37,7 +37,7 @@ static inline struct gb_netlink *hd_to_netlink(struct gb_host_device *hd)
 
 static const struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
 	[GB_NL_A_DATA] = { .type = NLA_BINARY, .len = GB_NETLINK_MTU },
-	[GB_NL_A_CPORT] = { .type = NLA_U16},
+	[GB_NL_A_CPORT] = { .type = NLA_U32},
 };
 
 static int gb_netlink_msg(struct sk_buff *skb, struct genl_info *info);

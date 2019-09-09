@@ -1,8 +1,8 @@
+#!/bin/bash
+
 #
 # Link this script to gbunprobe.sh and run that to make it remove modules
 #
-
-#!/bin/bash
 
 #set -x
 

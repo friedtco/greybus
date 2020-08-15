@@ -47,14 +47,12 @@ static const struct genl_ops gb_nl_ops[] = {
 	{
 		.cmd = GB_NL_C_MSG,
 		.flags = 0,
-		.policy = gb_nl_policy,
 		.doit = gb_netlink_msg,
 		.dumpit = NULL,
 	},
 	{
 		.cmd = GB_NL_C_HD_RESET,
 		.flags = 0,
-		.policy = gb_nl_policy,		/* TODO change to NULL */
 		.doit = gb_netlink_hd_reset,
 		.dumpit = NULL,
 	},
@@ -67,6 +65,7 @@ static struct genl_family gb_nl_family = {
 	.version = VERSION_NR,
 	.maxattr = GB_NL_A_MAX,
 	.ops = gb_nl_ops,
+	.policy = gb_nl_policy,
 	.n_ops = ARRAY_SIZE( gb_nl_ops ),
 };
 

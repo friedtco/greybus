@@ -37,7 +37,7 @@ while [ ${#MAP[@]} -gt 0 ]; do
 		if [ 1 -eq ${PROBE} ]; then
 			#echo "looking for module ${KEY}"
 
-			if [ "$(lsmod | awk '{ print $1 }' | grep "${KEY}")" != "" ]; then
+			if [ "$(lsmod | awk '{ print $1 }' | grep "^${KEY}\.ko$")" != "" ]; then
 				unset MAP[${KEY}]
 				break
 			fi

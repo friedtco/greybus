@@ -85,13 +85,12 @@ static int gb_netlink_hd_reset(struct sk_buff *skb, struct genl_info *info)
 
 static struct nla_policy gb_nl_policy[GB_NL_A_MAX + 1] = {
 	[GB_NL_A_DATA] = { .type = NLA_BINARY, .len = GB_NETLINK_MTU },
-	[GB_NL_A_CPORT] = { .type = NLA_U16},
+	[GB_NL_A_CPORT] = { .type = NLA_U32},
 };
 
 static struct genl_ops gb_nl_ops[] = {
 	{
 		.cmd = GB_NL_C_MSG,
-		.policy = gb_nl_policy,
 		.doit = gb_netlink_msg,
 	},
 	{
@@ -107,6 +106,7 @@ static struct genl_family gb_nl_family = {
 	.maxattr = GB_NL_A_MAX,
 	.ops = gb_nl_ops,
 	.n_ops = ARRAY_SIZE(gb_nl_ops),
+        .policy = gb_nl_policy,
 };
 
 static int message_send(struct gb_host_device *hd, u16 cport_id,
